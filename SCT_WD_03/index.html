@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tic Tac Toe</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Poppins:wght@300;400;600&display=swap');
+        
+        :root {
+            --neon-blue: #08f;
+            --neon-pink: #f0f;
+            --neon-purple: #90f;
+            --dark-bg: #111827;
+        }
+        
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: var(--dark-bg);
+            color: white;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        
+        h1, h2, h3 {
+            font-family: 'Orbitron', sans-serif;
+        }
+        
+        .neon-text-blue {
+            text-shadow: 0 0 5px var(--neon-blue), 0 0 10px var(--neon-blue);
+        }
+        
+        .neon-text-pink {
+            text-shadow: 0 0 5px var(--neon-pink), 0 0 10px var(--neon-pink);
+        }
+        
+        .neon-border-blue {
+            box-shadow: 0 0 10px var(--neon-blue), 0 0 20px var(--neon-blue), inset 0 0 10px var(--neon-blue);
+        }
+        
+        .neon-border-pink {
+            box-shadow: 0 0 10px var(--neon-pink), 0 0 20px var(--neon-pink), inset 0 0 10px var(--neon-pink);
+        }
+        
+        .cell {
+            transition: all 0.3s ease;
+        }
+        
+        .cell:hover {
+            transform: scale(1.05);
+        }
+        
+        .x-symbol {
+            color: var(--neon-blue);
+            text-shadow: 0 0 5px var(--neon-blue), 0 0 15px var(--neon-blue);
+        }
+        
+        .o-symbol {
+            color: var(--neon-pink);
+            text-shadow: 0 0 5px var(--neon-pink), 0 0 15px var(--neon-pink);
+        }
+        
+        .winning-cell {
+            animation: pulse 1s infinite alternate;
+        }
+        
+        @keyframes pulse {
+            from {
+                transform: scale(1);
+                opacity: 1;
+            }
+            to {
+                transform: scale(1.1);
+                opacity: 0.8;
+            }
+        }
+        
+        .glow {
+            animation: glow 2s infinite alternate;
+        }
+        
+        @keyframes glow {
+            from {
+                box-shadow: 0 0 5px #fff, 0 0 10px #fff, 0 0 15px var(--neon-blue), 0 0 20px var(--neon-blue);
+            }
+            to {
+                box-shadow: 0 0 10px #fff, 0 0 15px var(--neon-blue), 0 0 20px var(--neon-blue), 0 0 25px var(--neon-blue);
+            }
+        }
+        
+        .modal-overlay {
+            background-color: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(5px);
+        }
+        
+        .select-btn {
+            transition: all 0.3s ease;
+        }
+        
+        .select-btn:hover {
+            transform: translateY(-3px);
+        }
+        
+        .select-btn.active {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+        
+        .difficulty-btn {
+            transition: all 0.3s ease;
+        }
+        
+        .difficulty-btn:hover {
+            transform: scale(1.05);
+        }
+        
+        .difficulty-btn.active {
+            transform: scale(1.1);
+            box-shadow: 0 0 10px var(--neon-purple);
+        }
+    </style>
+</head>
+<body class="flex flex-col items-center justify-center min-h-screen p-4">
+    <audio id="clickSound" src="https://assets.mixkit.co/sfx/preview/mixkit-select-click-1109.mp3"></audio>
+    <audio id="winSound" src="https://assets.mixkit.co/sfx/preview/mixkit-winning-choir-2015.mp3"></audio>
+    <audio id="drawSound" src="https://assets.mixkit.co/sfx/preview/mixkit-neutral-game-notification-951.mp3"></audio>
+    
+    <div class="text-center mb-8">
+        <h1 class="text-4xl md:text-6xl font-bold mb-2 neon-text-purple glow">TIC-TAC-TOE</h1>
+    </div>
+    
+    <div class="flex flex-col md:flex-row items-center justify-center gap-8 w-full max-w-6xl">
+        <!-- Game Controls -->
+        <div class="w-full md:w-1/3 bg-gray-900 bg-opacity-70 rounded-xl p-6 neon-border-blue">
+            <h2 class="text-2xl font-bold mb-6 text-center neon-text-blue">GAME CONTROLS</h2>
+            
+            <div class="mb-8">
+                <h3 class="text-xl font-semibold mb-3">Game Mode</h3>
+                <div class="flex justify-center gap-4">
+                    <button id="pvpBtn" class="select-btn active bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg neon-border-blue">
+                        <i class="fas fa-users mr-2"></i> Player vs Player
+                    </button>
+                    <button id="pvcBtn" class="select-btn bg-purple-600 hover:bg-purple-700 text-white py-2 px-4 rounded-lg">
+                        <i class="fas fa-robot mr-2"></i> Player vs AI
+                    </button>
+                </div>
+            </div>
+            
+            <div id="difficultySection" class="mb-8 hidden">
+                <h3 class="text-xl font-semibold mb-3">AI Difficulty</h3>
+                <div class="flex flex-wrap justify-center gap-3">
+                    <button data-difficulty="easy" class="difficulty-btn bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-lg">
+                        <i class="fas fa-smile mr-2"></i> Easy
+                    </button>
+                    <button data-difficulty="medium" class="difficulty-btn bg-yellow-600 hover:bg-yellow-700 text-white py-2 px-4 rounded-lg active">
+                        <i class="fas fa-meh mr-2"></i> Medium
+                    </button>
+                    <button data-difficulty="hard" class="difficulty-btn bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded-lg">
+                        <i class="fas fa-frown mr-2"></i> Hard
+                    </button>
+                </div>
+            </div>
+            
+            <div class="mb-6">
+                <h3 class="text-xl font-semibold mb-3">Current Turn</h3>
+                <div id="currentPlayer" class="text-3xl font-bold neon-text-blue">
+                    <i class="fas fa-times mr-2"></i> Player X
+                </div>
+            </div>
+            
+            <div class="flex justify-center gap-4">
+                <button id="newGameBtn" class="bg-purple-600 hover:bg-purple-700 text-white py-3 px-6 rounded-lg font-bold transition-all transform hover:scale-105">
+                    <i class="fas fa-sync-alt mr-2"></i> New Game
+                </button>
+            </div>
+            
+            <div class="mt-8 pt-4 border-t border-gray-700">
+                <div class="flex justify-between items-center mb-2">
+                    <span class="text-blue-400"><i class="fas fa-times mr-2"></i> Player X:</span>
+                    <span id="scoreX" class="font-bold">0</span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="text-pink-400"><i class="far fa-circle mr-2"></i> Player O:</span>
+                    <span id="scoreO" class="font-bold">0</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Game Board -->
+        <div class="w-full md:w-2/3">
+            <div class="grid grid-cols-3 gap-4 aspect-square max-w-md mx-auto">
+                <!-- Cells will be generated by JavaScript -->
+            </div>
+        </div>
+    </div>
+    
+    <!-- Winner Modal -->
+    <div id="winnerModal" class="fixed inset-0 flex items-center justify-center z-50 hidden modal-overlay">
+        <div class="bg-gray-900 rounded-xl p-8 max-w-md w-full mx-4 border border-purple-500 neon-border-purple">
+            <div class="text-center">
+                <h2 id="winnerText" class="text-3xl font-bold mb-6"></h2>
+                <div id="winnerIcon" class="text-6xl mb-6"></div>
+                <button id="playAgainBtn" class="bg-purple-600 hover:bg-purple-700 text-white py-3 px-8 rounded-lg font-bold text-lg transition-all transform hover:scale-105">
+                    Play Again
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Game state
+            let board = ['', '', '', '', '', '', '', '', ''];
+            let currentPlayer = 'X';
+            let gameActive = true;
+            let gameMode = 'pvp'; // 'pvp' or 'pvc'
+            let difficulty = 'medium';
+            let scores = { X: 0, O: 0 };
+            let soundEnabled = true;
+            
+            // DOM elements
+            const cells = document.querySelectorAll('.grid > div');
+            const currentPlayerDisplay = document.getElementById('currentPlayer');
+            const scoreXDisplay = document.getElementById('scoreX');
+            const scoreODisplay = document.getElementById('scoreO');
+            const pvpBtn = document.getElementById('pvpBtn');
+            const pvcBtn = document.getElementById('pvcBtn');
+            const difficultySection = document.getElementById('difficultySection');
+            const difficultyBtns = document.querySelectorAll('[data-difficulty]');
+            const newGameBtn = document.getElementById('newGameBtn');
+            const winnerModal = document.getElementById('winnerModal');
+            const winnerText = document.getElementById('winnerText');
+            const winnerIcon = document.getElementById('winnerIcon');
+            const playAgainBtn = document.getElementById('playAgainBtn');
+            const clickSound = document.getElementById('clickSound');
+            const winSound = document.getElementById('winSound');
+            const drawSound = document.getElementById('drawSound');
+            
+            // Initialize the game board
+            function initializeBoard() {
+                // Clear the board
+                const grid = document.querySelector('.grid');
+                grid.innerHTML = '';
+                
+                // Create 9 cells
+                for (let i = 0; i < 9; i++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'cell bg-gray-800 rounded-lg flex items-center justify-center text-6xl md:text-8xl cursor-pointer transition-all';
+                    cell.dataset.index = i;
+                    cell.addEventListener('click', () => handleCellClick(i));
+                    grid.appendChild(cell);
+                }
+                
+                // Reset game state
+                board = ['', '', '', '', '', '', '', '', ''];
+                currentPlayer = 'X';
+                gameActive = true;
+                
+                // Update UI
+                updateCurrentPlayerDisplay();
+            }
+            
+            // Handle cell click
+            function handleCellClick(index) {
+                if (!gameActive || board[index] !== '') return;
+                
+                playSound(clickSound);
+                
+                // Make the move
+                board[index] = currentPlayer;
+                renderBoard();
+                
+                // Check for winner or draw
+                if (checkWin()) {
+                    handleWin();
+                    return;
+                } else if (checkDraw()) {
+                    handleDraw();
+                    return;
+                }
+                
+                // Switch player
+                currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
+                updateCurrentPlayerDisplay();
+                
+                // If in PVC mode and it's computer's turn
+                if (gameMode === 'pvc' && currentPlayer === 'O' && gameActive) {
+                    setTimeout(() => {
+                        makeComputerMove();
+                    }, 500);
+                }
+            }
+            
+            // Make computer move based on difficulty
+            function makeComputerMove() {
+                let move = getPerfectMove(); // Always use perfect strategy
+                
+                if (move !== null) {
+                    handleCellClick(move);
+                }
+            }
+            
+            // Get a random available move
+            function getRandomMove() {
+                const availableMoves = [];
+                for (let i = 0; i < 9; i++) {
+                    if (board[i] === '') {
+                        availableMoves.push(i);
+                    }
+                }
+                
+                return availableMoves.length > 0 ? 
+                    availableMoves[Math.floor(Math.random() * availableMoves.length)] : 
+                    null;
+            }
+            
+            // Get perfect move using minimax algorithm
+            function getPerfectMove() {
+                // Check for immediate win
+                for (let i = 0; i < 9; i++) {
+                    if (board[i] === '') {
+                        board[i] = 'O';
+                        if (checkWin('O')) {
+                            board[i] = '';
+                            return i;
+                        }
+                        board[i] = '';
+                    }
+                }
+                
+                // Check for immediate block
+                for (let i = 0; i < 9; i++) {
+                    if (board[i] === '') {
+                        board[i] = 'X';
+                        if (checkWin('X')) {
+                            board[i] = '';
+                            return i;
+                        }
+                        board[i] = '';
+                    }
+                }
+                
+                // Use minimax to find optimal move
+                let bestScore = -Infinity;
+                let bestMove = null;
+                
+                for (let i = 0; i < 9; i++) {
+                    if (board[i] === '') {
+                        board[i] = 'O';
+                        let score = minimax(board, 0, false);
+                        board[i] = '';
+                        
+                        if (score > bestScore) {
+                            bestScore = score;
+                            bestMove = i;
+                        }
+                    }
+                }
+                
+                return bestMove;
+            }
+            
+            // Minimax algorithm
+            function minimax(board, depth, isMaximizing) {
+                // Check terminal states
+                if (checkWin('O')) return 10 - depth;
+                if (checkWin('X')) return depth - 10;
+                if (checkDraw()) return 0;
+                
+                if (isMaximizing) {
+                    let bestScore = -Infinity;
+                    for (let i = 0; i < 9; i++) {
+                        if (board[i] === '') {
+                            board[i] = 'O';
+                            let score = minimax(board, depth + 1, false);
+                            board[i] = '';
+                            bestScore = Math.max(score, bestScore);
+                        }
+                    }
+                    return bestScore;
+                } else {
+                    let bestScore = Infinity;
+                    for (let i = 0; i < 9; i++) {
+                        if (board[i] === '') {
+                            board[i] = 'X';
+                            let score = minimax(board, depth + 1, true);
+                            board[i] = '';
+                            bestScore = Math.min(score, bestScore);
+                        }
+                    }
+                    return bestScore;
+                }
+            }
+            
+            // Render the board
+            function renderBoard() {
+                const cells = document.querySelectorAll('.cell');
+                
+                cells.forEach((cell, index) => {
+                    cell.innerHTML = '';
+                    
+                    if (board[index] === 'X') {
+                        const xIcon = document.createElement('i');
+                        xIcon.className = 'fas fa-times x-symbol';
+                        cell.appendChild(xIcon);
+                    } else if (board[index] === 'O') {
+                        const oIcon = document.createElement('i');
+                        oIcon.className = 'far fa-circle o-symbol';
+                        cell.appendChild(oIcon);
+                    }
+                });
+            }
+            
+            // Check for win
+            function checkWin(player = currentPlayer) {
+                const winPatterns = [
+                    [0, 1, 2], [3, 4, 5], [6, 7, 8], // rows
+                    [0, 3, 6], [1, 4, 7], [2, 5, 8], // columns
+                    [0, 4, 8], [2, 4, 6]             // diagonals
+                ];
+                
+                return winPatterns.some(pattern => {
+                    const isWinning = pattern.every(index => board[index] === player);
+                    
+                    if (isWinning && gameActive) {
+                        // Highlight winning cells
+                        pattern.forEach(index => {
+                            document.querySelector(`.cell[data-index="${index}"]`).classList.add('winning-cell');
+                        });
+                    }
+                    
+                    return isWinning;
+                });
+            }
+            
+            // Check for draw
+            function checkDraw() {
+                return !board.includes('') && !checkWin();
+            }
+            
+            // Handle win
+            function handleWin() {
+                gameActive = false;
+                scores[currentPlayer]++;
+                updateScores();
+                
+                playSound(winSound);
+                
+                // Show winner modal
+                winnerText.textContent = `Player ${currentPlayer} Wins!`;
+                winnerText.className = `text-3xl font-bold mb-6 neon-text-${currentPlayer === 'X' ? 'blue' : 'pink'}`;
+                
+                winnerIcon.innerHTML = currentPlayer === 'X' ? 
+                    '<i class="fas fa-times x-symbol"></i>' : 
+                    '<i class="far fa-circle o-symbol"></i>';
+                
+                winnerModal.classList.remove('hidden');
+            }
+            
+            // Handle draw
+            function handleDraw() {
+                gameActive = false;
+                
+                playSound(drawSound);
+                
+                // Show draw modal
+                winnerText.textContent = "It's a Draw!";
+                winnerText.className = "text-3xl font-bold mb-6 text-gray-300";
+                winnerIcon.innerHTML = '<i class="fas fa-handshake text-gray-400"></i>';
+                
+                winnerModal.classList.remove('hidden');
+            }
+            
+            // Update current player display
+            function updateCurrentPlayerDisplay() {
+                if (currentPlayer === 'X') {
+                    currentPlayerDisplay.innerHTML = '<i class="fas fa-times mr-2"></i> Player X';
+                    currentPlayerDisplay.className = 'text-3xl font-bold neon-text-blue';
+                } else {
+                    currentPlayerDisplay.innerHTML = '<i class="far fa-circle mr-2"></i> Player O';
+                    currentPlayerDisplay.className = 'text-3xl font-bold neon-text-pink';
+                }
+            }
+            
+            // Update scores
+            function updateScores() {
+                scoreXDisplay.textContent = scores.X;
+                scoreODisplay.textContent = scores.O;
+            }
+            
+            // Play sound if enabled
+            function playSound(sound) {
+                if (soundEnabled) {
+                    sound.currentTime = 0;
+                    sound.play();
+                }
+            }
+            
+            // Event listeners
+            pvpBtn.addEventListener('click', () => {
+                if (gameMode !== 'pvp') {
+                    playSound(clickSound);
+                    gameMode = 'pvp';
+                    pvpBtn.classList.add('active', 'neon-border-blue');
+                    pvpBtn.classList.remove('bg-purple-600');
+                    pvpBtn.classList.add('bg-blue-600');
+                    pvcBtn.classList.remove('active', 'neon-border-blue');
+                    pvcBtn.classList.remove('bg-blue-600');
+                    pvcBtn.classList.add('bg-purple-600');
+                    difficultySection.classList.add('hidden');
+                    initializeBoard();
+                }
+            });
+            
+            pvcBtn.addEventListener('click', () => {
+                if (gameMode !== 'pvc') {
+                    playSound(clickSound);
+                    gameMode = 'pvc';
+                    pvcBtn.classList.add('active', 'neon-border-blue');
+                    pvcBtn.classList.remove('bg-purple-600');
+                    pvcBtn.classList.add('bg-blue-600');
+                    pvpBtn.classList.remove('active', 'neon-border-blue');
+                    pvpBtn.classList.remove('bg-blue-600');
+                    pvpBtn.classList.add('bg-purple-600');
+                    difficultySection.classList.remove('hidden');
+                    initializeBoard();
+                }
+            });
+            
+            difficultyBtns.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    playSound(clickSound);
+                    difficulty = btn.dataset.difficulty;
+                    difficultyBtns.forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                });
+            });
+            
+            newGameBtn.addEventListener('click', () => {
+                playSound(clickSound);
+                initializeBoard();
+            });
+            
+            playAgainBtn.addEventListener('click', () => {
+                playSound(clickSound);
+                winnerModal.classList.add('hidden');
+                initializeBoard();
+            });
+            
+            // Initialize the game
+            initializeBoard();
+        });
+    </script>
+</body>
+</html>
